@@ -2,10 +2,11 @@ package ru.aipova.locatr
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context.CONNECTIVITY_SERVICE
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.location.Location
+import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
@@ -14,6 +15,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.widget.Toast
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -24,13 +26,11 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
-import java.util.*
+import java.io.IOException
 
 class LocatrFragment : SupportMapFragment() {
     private lateinit var apiClient: GoogleApiClient
-    private var mapImage: Bitmap? = null
-    private var mapItem: GalleryItem? = null
-    private var mapItems: List<GalleryItem> = listOf()
+    private var mapItems: List<GalleryMapItem> = listOf()
     private var currentLocation: Location? = null
     private var map: GoogleMap? = null
 
@@ -109,7 +109,7 @@ class LocatrFragment : SupportMapFragment() {
             apiClient,
             request,
             { location ->
-                Log.i(TAG, "Got a fix: ${location}")
+                Log.i(TAG, "Got a fix: $location")
                 SearchTask().execute(location)
             })
     }
@@ -135,55 +135,81 @@ class LocatrFragment : SupportMapFragment() {
     }
 
     private fun updateUI() {
-        if (map == null || mapImage == null) {
+        if (map == null || mapItems.isEmpty()) {
             return
         }
-        val itemPoint = LatLng(mapItem!!.latitude, mapItem!!.longitude)
+        val itemMarkers = mutableListOf<MarkerOptions>()
+        val boundsBuilder = LatLngBounds.Builder()
+        mapItems.forEach { galleryMapItem ->
+            val mapItem = galleryMapItem.galleryItem
+            val mapImage = galleryMapItem.mapImage
+            val itemPoint = LatLng(mapItem.latitude, mapItem.longitude)
+            itemMarkers.add(createMarker(itemPoint, mapImage))
+            boundsBuilder.include(itemPoint)
+        }
+
         val myPoint = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
-        val itemMarker =
-            MarkerOptions().position(itemPoint).icon(BitmapDescriptorFactory.fromBitmap(mapImage))
         val myMarker = MarkerOptions().position(myPoint)
+        val bounds = boundsBuilder.include(myPoint).build()
+
         map?.run {
             clear()
-            addMarker(itemMarker)
+            itemMarkers.forEach { addMarker(it) }
             addMarker(myMarker)
         }
-        val bounds = LatLngBounds.Builder()
-            .include(itemPoint)
-            .include(myPoint)
-            .build()
+
         val margin = resources.getDimensionPixelSize(R.dimen.map_inset_margin)
         val cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, margin)
         map?.animateCamera(cameraUpdate)
     }
 
-    inner class SearchTask : AsyncTask<Location, Void, Void>() {
-        private var galleryItem: GalleryItem? = null
-        private var galleryItems: List<GalleryItem> = listOf()
-        private var bitmap: Bitmap? = null
-        private lateinit var location: Location
+    private fun createMarker(
+        itemPoint: LatLng,
+        mapImage: Bitmap
+    ) = MarkerOptions().position(itemPoint).icon(BitmapDescriptorFactory.fromBitmap(mapImage))
 
-        override fun doInBackground(vararg params: Location): Void? {
-            val ctx = this@LocatrFragment.activity?.applicationContext ?: return null
-            location = params[0]
-            val fetchr = FlickrFetchr(ctx)
-            val result = fetchr.searchPhotos(location)
-            if (result.isNotEmpty()) {
-                galleryItems = result.distinctBy { it.caption }.subList(0, 5)
-                galleryItem = result[Random().nextInt(result.size)]
-                val bytes = fetchr.getUtlBytes(galleryItem?.url!!)
-                bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    inner class SearchTask : AsyncTask<Location, Void, SearchResult>() {
+        private var galleryBitmapItems: MutableList<GalleryMapItem> = mutableListOf()
+        private var location: Location? = null
+
+        override fun doInBackground(vararg params: Location): SearchResult {
+            val connectivityManager = activity?.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            val networkInfo = connectivityManager.activeNetworkInfo
+            if (networkInfo == null || !networkInfo.isConnected) {
+                return SearchResult.NOT_OK
             }
-            return null
+            location = params[0]
+            try {
+                val result = LocatrApp.flickrRepository.searchByLocation(params[0])
+                if (result.isNotEmpty()) {
+                    val galleryItems = result.filter { !it.url.isNullOrEmpty() }.distinctBy { it.caption }
+                    galleryItems.forEach { galleryItem ->
+                        galleryItem.url?.let { url ->
+                            val bitmap = LocatrApp.photoFetcher.getBitmapByUrl(url)
+                            galleryBitmapItems.add(GalleryMapItem(galleryItem, bitmap))
+                        }
+                    }
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Cannot load flickr photos", e)
+                return SearchResult.NOT_OK
+            }
+            return SearchResult.OK
         }
 
-        override fun onPostExecute(result: Void?) {
-            mapImage = bitmap
-            currentLocation = location
-            mapItem = galleryItem
-            mapItems = galleryItems
-            updateUI()
+        override fun onPostExecute(result: SearchResult) {
+            if (result == SearchResult.NOT_OK) {
+                Toast.makeText(activity, "Cannot load photos, check internet connection", Toast.LENGTH_LONG).show()
+            } else {
+                currentLocation = location
+                mapItems = galleryBitmapItems
+                updateUI()
+            }
         }
+    }
+
+    enum class SearchResult {
+        OK, NOT_OK
     }
 
     companion object {
