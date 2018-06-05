@@ -12,14 +12,13 @@ class LocatrApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val retrofit = Retrofit.Builder().baseUrl(API_PATH).addConverterFactory(GsonConverterFactory.create()).build()
+        val retrofit = Retrofit.Builder().baseUrl(BuildConfig.FLICKR_API_ENDPOINT).addConverterFactory(GsonConverterFactory.create()).build()
         val flickrApi = retrofit.create(FlickrApi::class.java)
         flickrRepository =
-                FlickrRepository(flickrApi, getString(R.string.flickr_key))
+                FlickrRepository(flickrApi, BuildConfig.FLICKR_API_KEY)
     }
 
     companion object {
-        private const val API_PATH = "https://api.flickr.com/"
         lateinit var flickrRepository: FlickrRepository
         var photoFetcher = PhotoFetchr()
     }

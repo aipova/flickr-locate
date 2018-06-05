@@ -4,6 +4,9 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+def apiProperties = new Properties()
+apiProperties.load(new FileInputStream(rootProject.file("api.properties")))
+
 android {
     compileSdkVersion 27
     defaultConfig {
@@ -14,7 +17,9 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
-        buildConfigField "String", "FLICKR_API_ENDPOINT", '"https://api.flickr.com/"'
+        buildConfigField "String", "FLICKR_API_ENDPOINT", apiProperties['flickrApiEndpoint']
+        buildConfigField "String", "FLICKR_API_KEY", apiProperties['flickrApiKey']
+        resValue "string", "google_maps_key", apiProperties['googleMapsApiKey']
     }
     buildTypes {
         release {
