@@ -1,4 +1,4 @@
-package ru.aipova.locatr
+package ru.aipova.locatr.ui
 
 import android.support.v4.app.Fragment
 import com.google.android.gms.common.ConnectionResult
@@ -14,7 +14,8 @@ class LocatrActivity : SingleFragmentActivity() {
         val apiAvailability = GoogleApiAvailability.getInstance()
         val errorCode = apiAvailability.isGooglePlayServicesAvailable(this)
         if (errorCode != ConnectionResult.SUCCESS) {
-            val errorDialog = apiAvailability.getErrorDialog(this, errorCode, REQUEST_ERROR, { finish() })
+            val errorDialog = apiAvailability.getErrorDialog(this, errorCode,
+                REQUEST_ERROR, { finish() })
             errorDialog.show()
         }
     }

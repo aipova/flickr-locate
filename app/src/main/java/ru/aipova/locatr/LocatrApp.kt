@@ -3,6 +3,9 @@ package ru.aipova.locatr
 import android.app.Application
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import ru.aipova.locatr.network.FlickrApi
+import ru.aipova.locatr.network.FlickrRepository
+import ru.aipova.locatr.network.PhotoFetchr
 
 class LocatrApp : Application() {
 
@@ -11,7 +14,8 @@ class LocatrApp : Application() {
 
         val retrofit = Retrofit.Builder().baseUrl(API_PATH).addConverterFactory(GsonConverterFactory.create()).build()
         val flickrApi = retrofit.create(FlickrApi::class.java)
-        flickrRepository = FlickrRepository(flickrApi, getString(R.string.flickr_key))
+        flickrRepository =
+                FlickrRepository(flickrApi, getString(R.string.flickr_key))
     }
 
     companion object {

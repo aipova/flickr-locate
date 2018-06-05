@@ -13,6 +13,8 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "FLICKR_API_ENDPOINT", '"https://api.flickr.com/"'
     }
     buildTypes {
         release {
@@ -22,21 +24,23 @@ android {
     }
 }
 
+apply from: '../versions.gradle'
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
-    implementation 'com.google.code.gson:gson:2.8.2'
-    implementation('com.google.android.gms:play-services-location:15.0.1') {
+    implementation "com.android.support:appcompat-v7:$supportVersion"
+    implementation("com.google.android.gms:play-services-location:$playServicesVersion") {
         exclude group: 'com.android.support'
     }
-    implementation('com.google.android.gms:play-services-maps:15.0.1') {
+    implementation("com.google.android.gms:play-services-maps:$playServicesVersion") {
         exclude group: 'com.android.support'
     }
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
+    implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttpVersion"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "com.android.support.test:runner:$runnerVersion"
+    androidTestImplementation "com.android.support.test.espresso:espresso-core:$espressoVersion"
 }

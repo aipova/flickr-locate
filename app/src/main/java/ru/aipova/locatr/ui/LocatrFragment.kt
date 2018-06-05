@@ -1,4 +1,4 @@
-package ru.aipova.locatr
+package ru.aipova.locatr.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -26,6 +26,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
+import ru.aipova.locatr.LocatrApp
+import ru.aipova.locatr.R
+import ru.aipova.locatr.model.GalleryMapItem
 import java.io.IOException
 
 class LocatrFragment : SupportMapFragment() {
@@ -76,7 +79,10 @@ class LocatrFragment : SupportMapFragment() {
     }
 
     private fun requestPermission() {
-        requestPermissions(LOCATION_PERMISSIONS, REQUEST_LOCATION_PERMISSIONS)
+        requestPermissions(
+            LOCATION_PERMISSIONS,
+            REQUEST_LOCATION_PERMISSIONS
+        )
     }
 
     override fun onStart() {
@@ -186,7 +192,12 @@ class LocatrFragment : SupportMapFragment() {
                     galleryItems.forEach { galleryItem ->
                         galleryItem.url?.let { url ->
                             val bitmap = LocatrApp.photoFetcher.getBitmapByUrl(url)
-                            galleryBitmapItems.add(GalleryMapItem(galleryItem, bitmap))
+                            galleryBitmapItems.add(
+                                GalleryMapItem(
+                                    galleryItem,
+                                    bitmap
+                                )
+                            )
                         }
                     }
                 }

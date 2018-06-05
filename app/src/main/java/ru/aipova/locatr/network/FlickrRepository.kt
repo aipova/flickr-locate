@@ -1,7 +1,8 @@
-package ru.aipova.locatr
+package ru.aipova.locatr.network
 
 import android.location.Location
 import android.util.Log
+import ru.aipova.locatr.model.GalleryItem
 
 class FlickrRepository(val flickrApi: FlickrApi, val apiKey: String) {
     fun searchByLocation(location: Location): List<GalleryItem> {

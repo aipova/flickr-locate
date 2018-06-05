@@ -1,4 +1,4 @@
-package ru.aipova.locatr
+package ru.aipova.locatr.network
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

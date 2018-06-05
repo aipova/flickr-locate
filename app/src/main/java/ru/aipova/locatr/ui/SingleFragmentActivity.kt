@@ -1,8 +1,9 @@
-package ru.aipova.locatr
+package ru.aipova.locatr.ui
 
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
+import ru.aipova.locatr.R
 
 abstract class SingleFragmentActivity : AppCompatActivity() {
 

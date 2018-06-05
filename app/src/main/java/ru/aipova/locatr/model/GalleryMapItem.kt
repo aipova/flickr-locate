@@ -1,4 +1,4 @@
-package ru.aipova.locatr
+package ru.aipova.locatr.model
 
 import android.graphics.Bitmap
 
