@@ -14,7 +14,7 @@ data class GalleryResult(
 data class GalleryItem(
     val id: String,
     @SerializedName("title") val caption: String,
-    @SerializedName("url_s") val url: String?,
+    @SerializedName("url_s") val url: String,
     val owner: String,
     val latitude: Double,
     val longitude: Double) {

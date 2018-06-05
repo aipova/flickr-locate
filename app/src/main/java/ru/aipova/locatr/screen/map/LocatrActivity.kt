@@ -1,8 +1,9 @@
-package ru.aipova.locatr.ui
+package ru.aipova.locatr.screen.map
 
 import android.support.v4.app.Fragment
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import ru.aipova.locatr.screen.SingleFragmentActivity
 
 class LocatrActivity : SingleFragmentActivity() {
     override fun createFragment(): Fragment {

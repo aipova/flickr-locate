@@ -1,4 +1,4 @@
-package ru.aipova.locatr.ui
+package ru.aipova.locatr.screen.map
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -28,7 +28,9 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import ru.aipova.locatr.LocatrApp
 import ru.aipova.locatr.R
+import ru.aipova.locatr.model.GalleryItem
 import ru.aipova.locatr.model.GalleryMapItem
+import ru.aipova.locatr.network.ApiFactory
 import java.io.IOException
 
 class LocatrFragment : SupportMapFragment() {
@@ -186,19 +188,18 @@ class LocatrFragment : SupportMapFragment() {
             }
             location = params[0]
             try {
-                val result = LocatrApp.flickrRepository.searchByLocation(params[0])
+                val result = getFlickrResult(params[0])
                 if (result.isNotEmpty()) {
-                    val galleryItems = result.filter { !it.url.isNullOrEmpty() }.distinctBy { it.caption }
+                    val galleryItems = result.filter { it.url.isNotEmpty() }.distinctBy { it.caption }
                     galleryItems.forEach { galleryItem ->
-                        galleryItem.url?.let { url ->
-                            val bitmap = LocatrApp.photoFetcher.getBitmapByUrl(url)
+                            val bitmap = LocatrApp.photoFetcher.getBitmapByUrl(galleryItem.url)
                             galleryBitmapItems.add(
                                 GalleryMapItem(
                                     galleryItem,
                                     bitmap
                                 )
                             )
-                        }
+
                     }
                 }
             } catch (e: IOException) {
@@ -206,6 +207,15 @@ class LocatrFragment : SupportMapFragment() {
                 return SearchResult.NOT_OK
             }
             return SearchResult.OK
+        }
+
+        fun getFlickrResult(location: Location): List<GalleryItem> {
+            val resultBody = ApiFactory.flickrApi.search(location.latitude.toString(), location.longitude.toString()).execute().body()
+            if (resultBody != null) {
+                return resultBody.photos.items
+            } else {
+                return listOf()
+            }
         }
 
         override fun onPostExecute(result: SearchResult) {

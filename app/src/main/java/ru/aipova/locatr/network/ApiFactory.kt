@@ -19,6 +19,7 @@ object ApiFactory {
         private fun buildClient() =
             OkHttpClient.Builder()
                 .addInterceptor(HttpLoggingInterceptor())
+                .addInterceptor(ApiKeyInterceptor())
                 .build()
 
 }

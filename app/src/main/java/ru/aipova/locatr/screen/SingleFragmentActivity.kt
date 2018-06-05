@@ -1,4 +1,4 @@
-package ru.aipova.locatr.ui
+package ru.aipova.locatr.screen
 
 import android.os.Bundle
 import android.support.v4.app.Fragment
