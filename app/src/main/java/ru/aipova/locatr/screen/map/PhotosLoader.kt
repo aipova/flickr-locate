@@ -12,7 +12,7 @@ import ru.aipova.locatr.model.GalleryMapResult
 import ru.aipova.locatr.network.ApiFactory
 import java.io.IOException
 
-class PhotosLoader(context: Context, private val location: Location) :
+class PhotosLoader(context: Context, private val location: Location?) :
     AsyncTaskLoader<GalleryMapResult>(context) {
 
     private var galleryMapResult: GalleryMapResult? = null
@@ -27,6 +27,10 @@ class PhotosLoader(context: Context, private val location: Location) :
     }
 
     override fun loadInBackground(): GalleryMapResult {
+        if (location == null) {
+            Log.i(TAG, "Location is not set")
+            return failureResult()
+        }
         try {
             val flickrResponse = callFlickrApi()
             val responseBody = flickrResponse.body()
@@ -53,7 +57,7 @@ class PhotosLoader(context: Context, private val location: Location) :
 
     private fun callFlickrApi(): Response<FlickrResponse> {
         return ApiFactory.flickrApi.search(
-            location.latitude.toString(),
+            location!!.latitude.toString(),
             location.longitude.toString()
         ).execute()
     }

@@ -2,14 +2,13 @@ package ru.aipova.locatr.screen.map
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context.CONNECTIVITY_SERVICE
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.Location
-import android.net.ConnectivityManager
-import android.os.AsyncTask
 import android.os.Bundle
+import android.support.v4.app.LoaderManager
 import android.support.v4.content.ContextCompat
+import android.support.v4.content.Loader
 import android.support.v7.app.AlertDialog
 import android.util.Log
 import android.view.Menu
@@ -26,12 +25,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
-import ru.aipova.locatr.LocatrApp
 import ru.aipova.locatr.R
-import ru.aipova.locatr.model.GalleryItem
 import ru.aipova.locatr.model.GalleryMapItem
-import ru.aipova.locatr.network.ApiFactory
-import java.io.IOException
+import ru.aipova.locatr.model.GalleryMapResult
 
 class LocatrFragment : SupportMapFragment() {
     private lateinit var apiClient: GoogleApiClient
@@ -42,7 +38,25 @@ class LocatrFragment : SupportMapFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+        restoreLocation(savedInstanceState)
+        buildGoogleMap()
+        if (currentLocation != null) {
+            loadImages()
+        }
+    }
 
+    private fun restoreLocation(savedInstanceState: Bundle?) {
+        savedInstanceState?.run {
+            if (containsKey(LOCATION_LAT)) {
+                currentLocation = Location("").apply {
+                    latitude = getDouble(LOCATION_LAT)
+                    longitude = getDouble(LOCATION_LON)
+                }
+            }
+        }
+    }
+
+    private fun buildGoogleMap() {
         apiClient = GoogleApiClient.Builder(activity!!)
             .addApi(LocationServices.API)
             .addConnectionCallbacks(object : GoogleApiClient.ConnectionCallbacks {
@@ -57,6 +71,14 @@ class LocatrFragment : SupportMapFragment() {
         getMapAsync { googleMap ->
             map = googleMap
             updateUI()
+        }
+    }
+
+    override fun onSaveInstanceState(bundle: Bundle) {
+        super.onSaveInstanceState(bundle)
+        currentLocation?.run {
+            bundle.putDouble(LOCATION_LAT, latitude)
+            bundle.putDouble(LOCATION_LON, longitude)
         }
     }
 
@@ -89,7 +111,6 @@ class LocatrFragment : SupportMapFragment() {
 
     override fun onStart() {
         super.onStart()
-
         activity?.invalidateOptionsMenu()
         apiClient.connect()
     }
@@ -105,6 +126,19 @@ class LocatrFragment : SupportMapFragment() {
         menu?.findItem(R.id.action_locate)?.isEnabled = apiClient.isConnected
     }
 
+    private fun loadImages(restart: Boolean = false) {
+        val callbacks =PhotoLoaderCallbacks()
+        if (restart) {
+            activity?.supportLoaderManager?.restartLoader(R.id.images_loader_id, Bundle.EMPTY, callbacks)
+        } else {
+            activity?.supportLoaderManager?.initLoader(R.id.images_loader_id, Bundle.EMPTY, callbacks)
+        }
+    }
+
+    private fun reloadImages() {
+        loadImages(true)
+    }
+
 
     @SuppressLint("MissingPermission")
     private fun findImage() {
@@ -117,8 +151,9 @@ class LocatrFragment : SupportMapFragment() {
             apiClient,
             request,
             { location ->
+                currentLocation = location
                 Log.i(TAG, "Got a fix: $location")
-                SearchTask().execute(location)
+                reloadImages()
             })
     }
 
@@ -176,66 +211,30 @@ class LocatrFragment : SupportMapFragment() {
         mapImage: Bitmap
     ) = MarkerOptions().position(itemPoint).icon(BitmapDescriptorFactory.fromBitmap(mapImage))
 
-    inner class SearchTask : AsyncTask<Location, Void, SearchResult>() {
-        private var galleryBitmapItems: MutableList<GalleryMapItem> = mutableListOf()
-        private var location: Location? = null
 
-        override fun doInBackground(vararg params: Location): SearchResult {
-            val connectivityManager = activity?.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-            val networkInfo = connectivityManager.activeNetworkInfo
-            if (networkInfo == null || !networkInfo.isConnected) {
-                return SearchResult.NOT_OK
-            }
-            location = params[0]
-            try {
-                val result = getFlickrResult(params[0])
-                if (result.isNotEmpty()) {
-                    val galleryItems = result.filter { it.url.isNotEmpty() }.distinctBy { it.caption }
-                    galleryItems.forEach { galleryItem ->
-                            val bitmap = LocatrApp.photoFetcher.getBitmapByUrl(galleryItem.url)
-                            galleryBitmapItems.add(
-                                GalleryMapItem(
-                                    galleryItem,
-                                    bitmap
-                                )
-                            )
-
-                    }
-                }
-            } catch (e: IOException) {
-                Log.e(TAG, "Cannot load flickr photos", e)
-                return SearchResult.NOT_OK
-            }
-            return SearchResult.OK
+    inner class PhotoLoaderCallbacks : LoaderManager.LoaderCallbacks<GalleryMapResult> {
+        override fun onCreateLoader(id: Int, args: Bundle?): Loader<GalleryMapResult> {
+            return PhotosLoader(activity!!, currentLocation)
         }
 
-        fun getFlickrResult(location: Location): List<GalleryItem> {
-            val resultBody = ApiFactory.flickrApi.search(location.latitude.toString(), location.longitude.toString()).execute().body()
-            if (resultBody != null) {
-                return resultBody.photos.items
-            } else {
-                return listOf()
-            }
-        }
-
-        override fun onPostExecute(result: SearchResult) {
-            if (result == SearchResult.NOT_OK) {
-                Toast.makeText(activity, "Cannot load photos, check internet connection", Toast.LENGTH_LONG).show()
-            } else {
-                currentLocation = location
-                mapItems = galleryBitmapItems
+        override fun onLoadFinished(loader: Loader<GalleryMapResult>, result: GalleryMapResult) {
+            if (result.isSuccessful) {
+                mapItems = result.galleryMapItems
                 updateUI()
+            } else {
+                Toast.makeText(activity, "Cannot load photos", Toast.LENGTH_LONG).show()
             }
         }
-    }
 
-    enum class SearchResult {
-        OK, NOT_OK
+        override fun onLoaderReset(loader: Loader<GalleryMapResult>) {
+        }
     }
 
     companion object {
         private const val TAG = "LocatrFragment"
         private const val REQUEST_LOCATION_PERMISSIONS = 0
+        private const val LOCATION_LAT = "LOCATION_LAT"
+        private const val LOCATION_LON = "LOCATION_LON"
         private val LOCATION_PERMISSIONS = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
