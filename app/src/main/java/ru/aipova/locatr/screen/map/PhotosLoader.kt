@@ -4,8 +4,8 @@ import android.content.Context
 import android.location.Location
 import android.support.v4.content.AsyncTaskLoader
 import android.util.Log
+import com.squareup.picasso.Picasso
 import retrofit2.Response
-import ru.aipova.locatr.LocatrApp
 import ru.aipova.locatr.model.FlickrResponse
 import ru.aipova.locatr.model.GalleryMapItem
 import ru.aipova.locatr.model.GalleryMapResult
@@ -37,7 +37,7 @@ class PhotosLoader(context: Context, private val location: Location?) :
             if (flickrResponse.isSuccessful && responseBody != null) {
                 val resultList = mutableListOf<GalleryMapItem>()
                 filteredPhotos(responseBody).forEach { galleryItem ->
-                    val bitmap = LocatrApp.photoFetcher.getBitmapByUrl(galleryItem.url)
+                    val bitmap = Picasso.get().load(galleryItem.url).get()
                     resultList.add(GalleryMapItem(galleryItem, bitmap))
                 }
                 return successResult(resultList)

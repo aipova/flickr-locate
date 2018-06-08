@@ -35,12 +35,11 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     implementation "com.android.support:appcompat-v7:$supportVersion"
-    implementation("com.google.android.gms:play-services-location:$playServicesVersion") {
-        exclude group: 'com.android.support'
-    }
-    implementation("com.google.android.gms:play-services-maps:$playServicesVersion") {
-        exclude group: 'com.android.support'
-    }
+    implementation "com.android.support:exifinterface:$supportVersion"
+    implementation "com.android.support:support-media-compat:$supportVersion"
+    implementation "com.android.support:support-v4:$supportVersion"
+    implementation("com.google.android.gms:play-services-location:$playServicesVersion")
+    implementation("com.google.android.gms:play-services-maps:$playServicesVersion")
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
     implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
@@ -48,4 +47,5 @@ dependencies {
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "com.android.support.test:runner:$runnerVersion"
     androidTestImplementation "com.android.support.test.espresso:espresso-core:$espressoVersion"
+    implementation "com.squareup.picasso:picasso:$picassoVersion"
 }
